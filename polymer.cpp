@@ -1,5 +1,11 @@
-#include <bits/stdc++.h>
+#include<cstdio>
+#include<cstdlib>
+#include<ctime>
+#include<cmath>
+#include<vector>
+
 using namespace std;
+
 typedef vector<int> vi;
 
 inline int LSOne(int n) {
@@ -8,23 +14,27 @@ inline int LSOne(int n) {
 
 class FenwickTree {
     private:
-        int size;
+        int len;
         vi ft;
         vi ori;
     public:
+        FenwickTree() {
+            FenwickTree(32);
+        }
+
         FenwickTree(int n) {
-            size = n;
+            len = n;
             ft.assign(n + 1, 0);
-            ori.assign(n + 1, 0)
+            ori.assign(n + 1, 0);
         }
 
         int size() {
-            return this.size;
+            return len;
         }
-        
+
         void set_all(int v) {
-            for (int i = 1; i < n; i++)
-                ft[i] = LSOne(i) * v;
+            for (int i = 1; i <= len; i++)
+                ori[i] = v, ft[i] = LSOne(i) * v;
         }
 
         int val(int k) {
@@ -32,19 +42,18 @@ class FenwickTree {
         }
 
         void remove(int k) {
-            ori[k] = ori[size];
-            set(k, val(size)); pop();
-        }
- 
-        // pushing value to fenwick tree costs O(lg n)
-        void push(int x) {
-            size++;
-            ori.push_back(x);
-            ft.push_back(rsq(size - LSOne(size) + 1, size - 1) + x)
+            set(k, val(len)); pop();
         }
 
-        void pop() {
-            int v = ori[size--];
+        // pushing value to fenwick tree costs O(lg n)
+        void push(int x) {
+            len++;
+            ori.push_back(x);
+            ft.push_back(rsq(len - LSOne(len) + 1, len - 1) + x);
+        }
+
+        int pop() {
+            int v = ori[len--];
             ori.pop_back(); 
             ft.pop_back();
             return v;
@@ -52,8 +61,9 @@ class FenwickTree {
 
         int rsq(int b) {
             int sum = 0;
-            while (; b; b -= LSOne(b)) sum += ft[b]
-                return sum;
+            for (; b; b -= LSOne(b))
+                sum += ft[b];
+            return sum;
         }
 
         int rsq(int a, int b) {
@@ -62,18 +72,16 @@ class FenwickTree {
 
         // OPTIMIZE: change from O(lg n * lg n) to O(lg n) solution
         int lower_bound(int l, int r, int v) {
-            if (l == r) {
-                return rsq(l) - l < v ? l + 1 : l;
-            }
-            
+            if (l == r) return rsq(l) - l < v ? l + 1 : l;
+
             int piv = (l + r) / 2;
             if (rsq(piv) - piv >= v)
-                return lower_bound(l, piv);
-            return lower_bound(piv + 1, r);
+                return lower_bound(l, piv, v);
+            return lower_bound(piv + 1, r, v);
         }
 
         int lower_bound(int v) {
-            return lower_bound(1, size, v);
+            return lower_bound(1, len, v);
         }
 
         void adjust(int k, int v) {
@@ -84,10 +92,10 @@ class FenwickTree {
         void set(int k, int v) {
             adjust(k, v - val(k));
         }
-    
+
         void print() {
-            for (int i = 1; i <= size; i++) {
-                if (i != 1) printf(" ");
+            for (int i = 1; i <= len; i++) {
+                if (i != 1) printf(", ");
                 printf("%d", ori[i]);
             }printf("\n");
         }
@@ -95,49 +103,56 @@ class FenwickTree {
 
 class Polymer {
     private:
-        int size;
-        double diss;
-        double ass;
         FenwickTree molecules;
+        int size;
+        double dis;
+        double ass;
     public:
-        Polymer(int size, double diss, double ass) {
-            this.size = size;
-            this.diss = diss;
-            this.ass = ass;
-            this.molecules = FenwickTree(size);
+        Polymer(int _size, double _dis, double _ass) {
+            size = _size;
+            dis = _dis;
+            ass = _ass;
+            molecules = FenwickTree(size);
             molecules.set_all(1);
         }
 
         FenwickTree simulate(int duration) {
+            double r;
             while (duration--) { 
                 // disassociation
-                double r = 1.0 * rand() / RAND_MAX;
-                n_bond = size - molecules.size();
-                if (r > pow(1 - ass, n_bond)) {
-                    int p = rand() % molecules.size() + 1;
-                    int k = molecules.lower_bound(p)
-                    p -= molecules.rsq(k) - k;
-                    molecules.adjust(k, -p);
-                    molecules.push(p);
+                r = 1.0 * rand() / RAND_MAX;
+                int n_bond = size - molecules.size();
+                if (r > pow(1 - dis, n_bond)) {
+                    int p = rand() % n_bond + 1;
+                    int k = molecules.lower_bound(p);
+                    p -= molecules.rsq(k) - k + 1;
+                    molecules.adjust(k, p);
+                    molecules.push(-p);
                 }
 
                 // association
-                double r = 1.0 * rand() / RAND_MAX;
-                n_mol = molecules.size();
-                if (r > pow(1 - diss, n_mol * (n_mol - 1) / 2)) {
+                r = 1.0 * rand() / RAND_MAX;
+                int n_mol = molecules.size();
+                if (r > pow(1 - ass, n_mol * (n_mol - 1) / 2)) {
                     int p = rand() % n_mol + 1;
                     int q = rand() % (n_mol - 1) + 1;
                     q = p > q ? q : q + 1; 
-                    molecules.adjust(p, molecules.value(q));
+                    molecules.adjust(p, molecules.val(q));
                     molecules.remove(q);
+                }
             }
             return molecules;
         }
-}
+};
 
-int size, dis, ass;
+int size, dur;
+double dis, ass;
 int main() {
-    scanf("%d %lf %lf", &size, &dis, &ass);
+    printf("size: "); scanf("%d", &size);
+    printf("disassociation prob: "); scanf("%lf", &dis);
+    printf("association prob: "); scanf("%lf", &ass);
+    printf("duration: "); scanf("%d", &dur);
+    srand(time(NULL));
     Polymer p(size, dis, ass);
-    p.simulate(5000).print();
+    p.simulate(dur).print();
 }
